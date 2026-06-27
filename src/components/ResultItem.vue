@@ -1,8 +1,13 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { ref, type PropType } from 'vue'
+
+interface ResultData {
+  highlighting: string[]
+  [key: string]: any
+}
 
 defineProps({
-  item: { type: Object, required: true },
+  item: { type: Object as PropType<ResultData>, required: true },
   currentPage: { type: Number, required: true },
   index: { type: Number, required: true },
 })
