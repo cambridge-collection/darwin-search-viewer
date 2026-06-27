@@ -139,10 +139,18 @@ if (
 const param_strings: string[] = []
 for (const key in q_params_tidied.value) {
   const raw = q_params_tidied.value[key]
-  const values = Array.isArray(raw) ? raw : [raw]
-  param_strings.push(
-    key + '=' + values.map(v => encodeURIComponent(String(v))).join(','),
+  const values = (Array.isArray(raw) ? raw : [raw]).map(v =>
+    encodeURIComponent(String(v)),
   )
+  // f1-date is comma-joined (the API splits it on ','); other facet values can
+  // themselves contain commas, so they need repeated keys.
+  if (/^f\d+-date$/.test(key)) {
+    param_strings.push(key + '=' + values.join(','))
+  } else {
+    for (const v of values) {
+      param_strings.push(key + '=' + v)
+    }
+  }
 }
 
 const params = param_strings.join('&')
