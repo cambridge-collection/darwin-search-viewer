@@ -138,7 +138,11 @@ if (
 
 const param_strings: string[] = []
 for (const key in q_params_tidied.value) {
-  param_strings.push(key + '=' + encodeURI(q_params_tidied.value[key]))
+  const raw = q_params_tidied.value[key]
+  const values = Array.isArray(raw) ? raw : [raw]
+  param_strings.push(
+    key + '=' + values.map(v => encodeURIComponent(String(v))).join(','),
+  )
 }
 
 const params = param_strings.join('&')
