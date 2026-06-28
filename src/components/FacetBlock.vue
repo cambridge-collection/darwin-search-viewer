@@ -2,15 +2,18 @@
 import FacetItem from '../components/FacetItem.vue'
 import { useRoute } from 'vue-router'
 import { computed, ref } from 'vue'
+import { expandable } from '@/implementationConfig'
+import { _descendant_bucket_names } from '@/lib/utils'
 
 const route = useRoute()
 const props = defineProps({
   desired_facet: { type: String, required: true },
   facets: { type: Object, required: true },
   facet_key: { type: Object, required: true },
-  query_params: { type: Object, required: true },
-  q_params_tidied: { type: Object, required: true },
-  router: { type: Object, required: true },
+  params: {
+    type: Array as () => { key: string; value: string }[],
+    required: true,
+  },
 })
 
 const fullPath = ref(route.fullPath)
@@ -31,16 +34,15 @@ const has_entries = computed(() => {
 })
 
 const subfacets = computed(() => {
-  return {
-    'f1-year-month': props.facets['f1-year-month'],
-    'f1-year-month-day': props.facets['f1-year-month-day'],
+  const result: Record<string, unknown> = {}
+  for (const bucket of _descendant_bucket_names(props.desired_facet)) {
+    result[bucket] = props.facets[bucket]
   }
+  return result
 })
 
 const is_expandible = computed(() => {
-  return ['author', 'addressee', 'correspondent'].includes(
-    name.value.toLowerCase(),
-  )
+  return expandable.includes(name.value.toLowerCase())
 })
 
 const is_expanded = computed(() => {
@@ -79,11 +81,9 @@ const expand_link = computed(() => {
             v-for="facet in target_facets"
             :facet="facet"
             :param_name="desired_facet"
-            :query_params="query_params"
+            :params="params"
             :subfacets="subfacets"
             v-bind:is_subgroup="false"
-            v-bind:router="router"
-            v-bind:q_params_tidied="props.q_params_tidied"
             :key="JSON.stringify(facet) + fullPath"
           />
         </tbody>
