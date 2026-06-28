@@ -1,15 +1,33 @@
 <script lang="ts" setup>
-import { inject, ref, computed, onBeforeMount } from 'vue'
+import { ref, computed, onBeforeMount } from 'vue'
 import { useRouter, useRoute, stringifyQuery } from 'vue-router'
 import ResultItem from '@/components/ResultItem.vue'
 import FacetBlock from '@/components/FacetBlock.vue'
+import NoResults from '@/components/NoResults.vue'
+import PaginationBar from '@/components/PaginationBar.vue'
 import CamplPageHeader from '@/components/campl-page-header.vue'
 import 'vue-awesome-paginate/dist/style.css'
 import { CSpinner } from '@coreui/vue'
+import {
+  api_url,
+  desired_facets,
+  facet_key,
+  advanced_params,
+  non_filtering_keys,
+  tab_class,
+  tab_href,
+} from '@/implementationConfig'
+import {
+  build_all_params,
+  cancel_link,
+  _facet_display_name,
+  _query_param_sort,
+  _params_to_query_structure,
+  _tracer_bullet,
+} from '@/lib/utils'
 
 const router = useRouter()
 const route = useRoute()
-const api_url = inject('api_url')
 const commits = ref(<any[]>[])
 const facets = ref(<any>{})
 const core = computed(() => {
@@ -18,51 +36,6 @@ const core = computed(() => {
 })
 const is_loading = ref(true)
 const is_error = ref(<any>{'bool': false, message: ""})
-
-// Add any other desired facets into this array
-// They will be displayed in that order
-const desired_facets: string[] = [
-  'f1-document-type',
-  'f1-author',
-  'f1-addressee',
-  'f1-correspondent',
-  'f1-year',
-  's-commentary',
-  's-key-stage',
-  's-ages',
-  's-topics',
-]
-
-// Enter facet details here.
-const facet_key = {
-  'f1-document-type': { name: 'Document type', count: 5 },
-  'f1-author': { name: 'Author', count: 5 },
-  'f1-addressee': { name: 'Addressee', count: 5 },
-  'f1-correspondent': { name: 'Correspondent', count: 5 },
-  'f1-year': { name: 'Date', count: 999 },
-  's-commentary': { name: 'Commentary', count: 5 },
-  's-key-stage': { name: 'Key Stage', count: 5 },
-  's-ages': { name: 'Learning Band', count: 5 },
-  's-topics': { name: 'Topics', count: 5 },
-}
-
-const advanced_params = [
-  'text',
-  'sectionType',
-  'search-addressee',
-  'search-author',
-  'search-correspondent',
-  'year',
-  'month',
-  'day',
-  'year-max',
-  'month-max',
-  'day-max',
-  'search-date-type',
-  'exclude-widedate',
-  'search-repository',
-  'exclude-cancelled',
-]
 
 const items_per_page = 20
 
@@ -78,215 +51,46 @@ const currentPage = ref(get_current_page())
 
 let total = ref(0)
 
-// These are the search params
-//const q_params_tidied: any = {}
-const q_params_tidied = computed(() => {
-  const result: any = {}
-  for (const key in route.query) {
-    if (
-      !['start', 'page', 'tab', 'smode', 'text-exclude'].includes(key) &&
-      route.query[key]
-    ) {
-      const new_key = key.replace(/^f\d+-/, 'f1-')
-      result[new_key] = [
-        route.query[key],
-        new_key in result ? result[new_key] : []
-      ].flat(Infinity)
-    }
-  }
+const all_params = computed<{ key: string; value: string }[]>(() =>
+  build_all_params(route.query),
+)
 
-  if ('f1-date' in result && result['f1-date']) {
-    const vals: Array<string> = result['f1-date']
-    const final_vals: Array<string> = []
-    vals.forEach(d => {
-      const d_clean: string = d.replace(/(^"|"$)/g, '')
-      if (d.includes('::')) {
-        const tokens = d_clean.split('::')
-        for (let j = 1; j <= tokens.length; j++) {
-          final_vals.push(tokens.slice(0, j).join('::'))
-        }
-      } else {
-        final_vals.push(d_clean)
-      }
-    })
-    result['f1-date'] = [...new Set(final_vals)].sort()
-  }
-  return result
-})
+const facets_key = computed(() => _params_to_query_structure(all_params.value))
 
-const facets_key = computed(() => {
-  const p = { ...q_params_tidied.value }
-  if ('expand' in route.params) {
-    p['expand'] = route.params['expand']
-  }
-  return p
-})
+const fullpath_uriencoded = computed(() => encodeURIComponent(route.fullPath))
 
-const fullpath_uriencoded = computed(() => {
-  return encodeURIComponent(route.fullPath)
-})
+const all_params_uri = computed(() =>
+  all_params.value
+    .map(p => p.key + '=' + encodeURIComponent(String(p.value)))
+    .join('&'),
+)
 
-// Remove search-date-type if not date query terms are entered
-if (
-  'search-date-type' in q_params_tidied.value &&
-  !Object.keys(q_params_tidied.value).some(ai =>
-    ['year', 'month', 'day'].includes(ai),
-  )
-) {
-  delete q_params_tidied.value['search-date-type']
-}
+const filtering_params = computed(() =>
+  all_params.value.filter(p => !non_filtering_keys.includes(p.key)),
+)
 
-const param_strings: string[] = []
-for (const key in q_params_tidied.value) {
-  const raw = q_params_tidied.value[key]
-  const values = (Array.isArray(raw) ? raw : [raw]).map(v =>
-    encodeURIComponent(String(v)),
-  )
-  // f1-date is comma-joined (the API splits it on ','); other facet values can
-  // themselves contain commas, so they need repeated keys.
-  if (/^f\d+-date$/.test(key)) {
-    param_strings.push(key + '=' + values.join(','))
-  } else {
-    for (const v of values) {
-      param_strings.push(key + '=' + v)
-    }
-  }
-}
+const get_facet_header = (key: string): string => _facet_display_name(key) ?? key
 
-const params = param_strings.join('&')
+// Query-summary pills: the filtering params minus the (non-filter) expand control,
+// sorted by facet (search terms first), then by value.
+const summary_params = computed(() =>
+  filtering_params.value
+    .filter(p => p.key !== 'expand')
+    .sort((a, b) => {
+      const byKey = _query_param_sort(a.key).localeCompare(_query_param_sort(b.key))
+      return byKey !== 0 ? byKey : a.value.localeCompare(b.value)
+    }),
+)
 
-const query_key = computed(() => {
-  return JSON.stringify(route.query)
-})
-
-const keyword_values = computed(() => {
-  // Used for :key to determine whether to update the page header
-  // because the keyword appears in the search fields
-  let result = ''
-  if ('keyword' in query_params.value) {
-    result = query_params.value['keyword']['details']
-      .map((e: any) => e.value)
-      .join(' ')
-  }
-  return result
-})
-
-function get_fieldname(p: string) {
-  let name: string
-  if (p == 'q') {
-    name = 'q' //keyword
-  } else {
-    name = p
-  }
-  return name
-}
-
-function get_term_cancel_link(p: string, v: string) {
-  // Need to clear child params if parent is deselected -- ie.
-  // facet down to a specific day - then remove the month
-  // both day and month should not appear in the cancel link
-
-  // Remove object for key 'p' from param list
-  const ps_tidied = Object.fromEntries(
-    Object.entries(q_params_tidied.value).filter(([k, v]) => k !== p),
-  )
-  const current_param = Object.fromEntries(
-    Object.entries(q_params_tidied.value).filter(([k, v]) => k == p),
-  )
-  const qs = []
-  if (Object.keys(ps_tidied).length == 0) {
-    qs.push('keyword=') // Should be browse-all=yes
-  } else {
-    for (const key in ps_tidied) {
-      let vals: any[] = []
-      if (Array.isArray(ps_tidied[key])) {
-        vals = vals.concat(ps_tidied[key])
-      } else {
-        vals.push(ps_tidied[key])
-      }
-      vals.forEach(function (val, index) {
-        if (!(key == p && val == v)) {
-          qs.push(get_fieldname(key) + '=' + val)
-        }
-      })
-    }
-    // Add any relevant values for the current param that would NOT
-    // be cancelled by current cancellation
-    for (const key of Object.keys(current_param)) {
-      let vals: string[] = []
-      if (Array.isArray(current_param[key])) {
-        vals = vals.concat(current_param[key])
-      } else if (typeof current_param[key] == 'string') {
-        vals.push(current_param[key])
-      }
-
-      for (const val of vals) {
-        if (!remove_vals(p, v, key, val)) {
-          qs.push(get_fieldname(key) + '=' + val)
-        }
-      }
-    }
-  }
-  return qs.join('&') + '&page=1'
-}
-
-function remove_vals(
-  selected_key: string,
-  selected_value: string,
-  key: string,
-  val: string,
-) {
-  let matches = key == selected_key && val == selected_value
-  if (/^f\d+-date$/.test(selected_key)) {
-    const tidied_val = selected_value.replaceAll(/^"(.+?)"$/g, '$1')
-    const val_pattern = new RegExp('^' + tidied_val + '::')
-    matches =
-      val == selected_value ||
-      val_pattern.test(val.replaceAll(/^"(.+?)"$/g, '$1'))
-  }
-  return matches
-}
-
-// Final query param string
-const query_params: any = computed(() => {
-  const p: any = {}
-  for (const key in q_params_tidied.value) {
-    const value = q_params_tidied.value[key]
-
-    p[key] = {
-      fieldname: get_fieldname(key),
-    }
-    const details: any[] = []
-    let detail: any = {}
-    let vals: string[] = []
-
-    if (Array.isArray(value)) {
-      vals = vals.concat(value)
-    } else {
-      vals.push(value)
-    }
-    vals.forEach(function (val, index) {
-      detail = {
-        value: val,
-        cancel_link: get_term_cancel_link(key, val),
-      }
-      details.push(detail)
-    })
-    p[key]['details'] = details
-  }
-  return p
-})
+const keyword_values = computed(() =>
+  all_params.value
+    .filter(p => p.key === 'keyword')
+    .map(p => p.value)
+    .join(' '),
+)
 
 const sort = computed(() => {
   return 'sort' in route.query ? route.query['sort'] : 'score'
-})
-const sp = { ...query_params.value }
-delete sp['sort']
-delete sp['tc']
-delete sp['expand']
-
-const expand = computed(() => {
-  return 'expand' in route.query ? route.query['expand'] : null
 })
 
 const keyword = computed(() => {
@@ -295,39 +99,18 @@ const keyword = computed(() => {
 
 const advanced_query_string = computed(() => {
   const params: any = {}
-  advanced_params.forEach(p => {
-    if (p in q_params_tidied.value && q_params_tidied.value[p]) {
-      params[p] = q_params_tidied.value[p]
-    }
-  })
+  all_params.value
+    .filter(p => advanced_params.includes(p.key))
+    .forEach(p => {
+      if (params[p.key]) {
+        params[p.key].push(p.value)
+      } else {
+        params[p.key] = [p.value]
+      }
+    })
 
   return stringifyQuery(params)
 })
-
-function tab_active(name: string): boolean {
-  return (
-    (name == 'this-site' && core.value == 'pages') ||
-    (name == 'cudl-results' && core.value != 'pages')
-  )
-}
-
-function tab_class(name: string) {
-  const active_class = tab_active(name) ? 'active' : null
-  return [name, active_class].join(' ')
-}
-
-function tab_href(name: string) {
-  let path = tab_active(name) ? '#' : '/search?'
-  const params = { keyword: keyword.value, tc: 'pages', page: 1 }
-
-  if (name != 'this-site') {
-    delete (params as { tc?: string }).tc
-  }
-  if (!tab_active(name)) {
-    path += stringifyQuery(params)
-  }
-  return path
-}
 
 const paginated_results = computed(() => total.value >= items_per_page )
 
@@ -339,7 +122,7 @@ function throw_error(error: any) {
 }
 
 const updateURL = async (page: number): Promise<void> => {
-  console.log('Moving to page ' + page)
+  _tracer_bullet('Moving to page ' + page)
 
   await router.push({
     name: 'search',
@@ -349,19 +132,17 @@ const updateURL = async (page: number): Promise<void> => {
 
 async function fetchData(start: number) {
   commits.value = []
-  const control_params = []
+  const request_params = filtering_params.value.map(
+    p => p.key + '=' + encodeURIComponent(String(p.value)),
+  )
   if (start) {
-    control_params.push('page=' + start)
+    request_params.push('page=' + start)
   }
   if (sort.value) {
-    control_params.push('sort=' + sort.value)
+    request_params.push('sort=' + sort.value)
   }
-  if (expand.value) {
-    control_params.push('expand=' + expand.value)
-  }
-  const url =
-    api_url + '/' + core.value + '?' + params + '&' + control_params.join('&')
-  console.log("Trying " + url)
+  const url = api_url + '/' + core.value + '?' + request_params.join('&')
+  _tracer_bullet('Trying ' + url)
   const nq = await fetch(url, {
     method: 'get',
     mode: 'cors',
@@ -430,7 +211,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <campl-page-header :query_params="query_params" :key="keyword_values" />
+  <campl-page-header :keyword="keyword_values" :key="keyword_values" />
   <div class="campl-row campl-content campl-recessed-content dcpNew">
     <div class="campl-wrap clearfix">
       <div
@@ -491,15 +272,15 @@ onBeforeMount(async () => {
                 <ul class="tab-menu">
                   <li>
                     <a
-                      :href="tab_href('cudl-results')"
-                      :class="tab_class('cudl-results')"
+                      :href="tab_href('cudl-results', core, keyword)"
+                      :class="tab_class('cudl-results', core)"
                       >Letters, people &amp; references</a
                     >
                   </li>
                   <li>
                     <a
-                      :href="tab_href('this-site')"
-                      :class="tab_class('this-site')"
+                      :href="tab_href('this-site', core, keyword)"
+                      :class="tab_class('this-site', core)"
                       >Articles</a
                     >
                   </li>
@@ -517,24 +298,23 @@ onBeforeMount(async () => {
                               <b>Search:</b>
                             </div>
                             <div class="subQuery">
-                              <div
-                                v-for="(obj, key) in sp"
-                                :key="JSON.stringify(obj)"
+                              <span
+                                class="option"
+                                v-for="o in summary_params"
+                                :key="JSON.stringify(o)"
                               >
-                                <div
-                                  class="option"
-                                  v-for="o in obj['details']"
-                                  :key="JSON.stringify(o)"
-                                >
-                                  <span class="subhit">{{ o.value }}</span>
-                                  in <b>{{ obj.fieldname }}</b
-                                  >&nbsp;<a :href="'/search?' + o.cancel_link"
-                                    ><span class="material-icons"
-                                      >disabled_by_default</span
-                                    ></a
-                                  >
-                                </div>
-                              </div>
+                                <span class="subhit">{{ o.value }}</span>
+                                in <b>{{ get_facet_header(o.key) }}</b
+                                >&nbsp;<router-link
+                                  :to="{
+                                    name: 'search',
+                                    query: cancel_link(o.key, o.value, all_params),
+                                  }"
+                                  ><span class="material-icons"
+                                    >disabled_by_default</span
+                                  ></router-link
+                                ><br />
+                              </span>
                               <p
                                 class="modify_advanced"
                                 v-if="advanced_query_string.length > 0"
@@ -587,11 +367,11 @@ onBeforeMount(async () => {
                                   </option>
                                 </select>
                                 <input
-                                  v-for="(value, name) in q_params_tidied"
+                                  v-for="p in filtering_params"
                                   type="hidden"
-                                  :name="String(name)"
-                                  :value="value"
-                                  :key="name + value"
+                                  :name="p.key"
+                                  :value="p.value"
+                                  :key="p.key + p.value"
                                 />
                                 <input type="hidden" name="page" value="1" />
                                 <input type="hidden" name="tab" value="" />
@@ -599,137 +379,19 @@ onBeforeMount(async () => {
                                 &nbsp;<input type="submit" value="Go!" />
                               </form>
                             </div>
-                            <div :class="'pages ' + paginated_results">
-                              <vue-awesome-paginate
-                                :totalItems="total"
-                                :itemsPerPage="items_per_page"
-                                :maxPagesShown="5"
-                                v-model="currentPage"
-                                @click="updateURL"
-                                type="link"
-                                :linkUrl="'/search?page=[page]&' + params"
-                              />
-                            </div>
+                            <PaginationBar
+                              :total="total"
+                              :items-per-page="items_per_page"
+                              v-model:current-page="currentPage"
+                              :all-params-uri="all_params_uri"
+                              :paginated-results="paginated_results"
+                              @navigate="updateURL"
+                            />
                           </div>
-                          <table v-else-if="total == 0">
-                            <tbody>
-                              <tr>
-                                <td>
-                                  <p>Sorry, no results...</p>
-                                  <p>Try modifying your search:</p>
-                                  <div class="forms">
-                                    <form method="get" action="/search">
-                                      <table>
-                                        <tbody>
-                                          <tr>
-                                            <td>
-                                              <input
-                                                type="text"
-                                                name="keyword"
-                                                size="40"
-                                                :value="keyword_values"
-                                              />
-                                              <input
-                                                type="hidden"
-                                                name="page"
-                                                value="1"
-                                              />
-                                              &nbsp;<input
-                                                type="submit"
-                                                value="Search"
-                                              />
-                                              <input
-                                                type="reset"
-                                                onclick="location.href='/search'"
-                                                value="Clear"
-                                              />
-                                            </td>
-                                          </tr>
-                                          <tr>
-                                            <td>
-                                              <table class="sampleTable">
-                                                <tbody>
-                                                  <tr>
-                                                    <td colspan="2">
-                                                      <b>NB:</b> Searches are
-                                                      not case sensitive and
-                                                      will find both singular
-                                                      and plural of any term
-                                                    </td>
-                                                  </tr>
-                                                  <tr>
-                                                    <td colspan="2">
-                                                      Examples:
-                                                    </td>
-                                                  </tr>
-                                                  <tr>
-                                                    <td class="sampleQuery">
-                                                      flowering
-                                                    </td>
-                                                    <td class="sampleDescrip">
-                                                      find the word ‘flowering’
-                                                    </td>
-                                                  </tr>
-                                                  <tr>
-                                                    <td class="sampleQuery">
-                                                      flowering plant
-                                                    </td>
-                                                    <td class="sampleDescrip">
-                                                      find documents containing
-                                                      both ‘flowering’ and
-                                                      ‘plant(s)’
-                                                    </td>
-                                                  </tr>
-                                                  <tr>
-                                                    <td class="sampleQuery">
-                                                      "flowering plant"
-                                                    </td>
-                                                    <td class="sampleDescrip">
-                                                      find the phrase ‘flowering
-                                                      plant(s)’
-                                                    </td>
-                                                  </tr>
-                                                  <tr>
-                                                    <td class="sampleQuery">
-                                                      pl*t
-                                                    </td>
-                                                    <td class="sampleDescrip">
-                                                      find any word beginning
-                                                      ‘pl’ followed by zero or
-                                                      more characters, and
-                                                      ending ‘t’
-                                                    </td>
-                                                  </tr>
-                                                  <tr>
-                                                    <td class="sampleQuery">
-                                                      *plant
-                                                    </td>
-                                                    <td class="sampleDescrip">
-                                                      find any word ending with
-                                                      ‘plant(s)’
-                                                    </td>
-                                                  </tr>
-                                                  <tr>
-                                                    <td class="sampleQuery">
-                                                      plant*
-                                                    </td>
-                                                    <td class="sampleDescrip">
-                                                      find any word beginning
-                                                      ‘plant’
-                                                    </td>
-                                                  </tr>
-                                                </tbody>
-                                              </table>
-                                            </td>
-                                          </tr>
-                                        </tbody>
-                                      </table>
-                                    </form>
-                                  </div>
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
+                          <NoResults
+                            v-else-if="total == 0"
+                            :keyword="keyword_values"
+                          />
                         </div>
                         <ResultItem
                           v-for="(item, index) in commits"
@@ -738,17 +400,14 @@ onBeforeMount(async () => {
                           :index="index"
                           :key="JSON.stringify(item)"
                         />
-                        <div :class="'pages ' + paginated_results">
-                          <vue-awesome-paginate
-                            :totalItems="total"
-                            :itemsPerPage="items_per_page"
-                            :maxPagesShown="5"
-                            v-model="currentPage"
-                            @click="updateURL"
-                            type="link"
-                            :linkUrl="'/search?page=[page]&' + params"
-                          />
-                        </div>
+                        <PaginationBar
+                          :total="total"
+                          :items-per-page="items_per_page"
+                          v-model:current-page="currentPage"
+                          :all-params-uri="all_params_uri"
+                          :paginated-results="paginated_results"
+                          @navigate="updateURL"
+                        />
                       </div>
                     </div>
                   </div>
@@ -771,12 +430,9 @@ onBeforeMount(async () => {
                   <facet-block
                     v-for="facet in desired_facets"
                     :desired_facet="facet"
-                    :params="params"
+                    :params="all_params"
                     v-bind:facets="facets"
                     v-bind:facet_key="facet_key"
-                    v-bind:query_params="query_params"
-                    v-bind:router="router"
-                    v-bind:q_params_tidied="q_params_tidied"
                     :key="facets_key + '::' + facet"
                   />
                 </div>
