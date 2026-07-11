@@ -85,6 +85,32 @@ export const advanced_params = [
   'exclude-cancelled',
 ]
 
+export const advanced_default_value_params = [
+  'search-date-type',
+  'exclude-widedate',
+  'exclude-cancelled',
+]
+
+export const section_type_options = [
+  { value: '', label: 'Keyword' },
+  { value: 'transcribed', label: 'Transcriptions' },
+  { value: 'footnote', label: 'Footnotes' },
+  { value: 'summary', label: 'Summaries' },
+]
+
+export const correspondent_role_options = [
+  { value: 'search-correspondent', label: 'To & from' },
+  { value: 'search-author', label: 'From' },
+  { value: 'search-addressee', label: 'To' },
+]
+
+export const date_type_options = [
+  { value: 'on', label: 'On' },
+  { value: 'before', label: 'Before' },
+  { value: 'after', label: 'After' },
+  { value: 'between', label: 'Between' },
+]
+
 // Standardise XTF-style fN- facet numbering to f1-
 export const _tidy_facet_paramname = (key: string): string =>
   key.replace(/^f\d+-/, 'f1-')
