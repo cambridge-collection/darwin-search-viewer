@@ -421,7 +421,7 @@ sup.footnote.selectedFootnote {
   top: -4.5em !important;
   z-index: 10;
 }
-.campl-column3.campl-secondary-content {
+.campl-column4.campl-secondary-content {
   position: relative;
   top: -14.5em;
   z-index: 10;
@@ -785,7 +785,7 @@ span.doubleUnderline {
   color: #0072cf;
 }
 .campl-secondary-content {
-  background-color: #f7f5f0;
+  background-color: inherit;
 }
 .view-my-sidebar h3:first-child {
   margin-top: 5px;

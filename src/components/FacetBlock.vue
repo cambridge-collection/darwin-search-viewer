@@ -65,14 +65,22 @@ const expand_link = computed(() => {
 
 <template>
   <div class="facet" v-if="has_entries">
+    <div class="field-content">
     <div class="facetName">
+      <router-link
+        v-if="is_expandible && target_facets.length >= 5"
+        class="facetToggle"
+        :to="{ name: 'search', query: is_expanded ? unexpand_link : expand_link }"
+        :title="is_expanded ? 'Show fewer' : 'Show all'"
+        :aria-label="is_expanded ? 'Show fewer' : 'Show all'"
+      >
+        <i
+          class="fas"
+          :class="is_expanded ? 'fa-caret-down' : 'fa-caret-right'"
+          aria-hidden="true"
+        ></i>
+      </router-link>
       {{ name }}
-      <div class="facetMore" v-if="is_expandible">
-        <i v-if="target_facets.length >= 5">
-          <router-link :to="{ name: 'search', query: unexpand_link}" v-if="is_expanded">less <span>-</span></router-link>
-          <router-link :to="{ name: 'search', query: expand_link}" v-else>more <span>+</span></router-link>
-        </i>
-      </div>
     </div>
     <div class="facetGroup">
       <table>
@@ -89,15 +97,23 @@ const expand_link = computed(() => {
         </tbody>
       </table>
     </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .dcpNew .facet .facetName {
-  font-weight: bold;
-  background-color: transparent;
-  color: #111;
-  padding-bottom: 0.5em;
+  position: relative;
+  background-color: #4b701c;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 1em;
+  font-weight: normal;
+  text-align: center;
+  padding: 0.5em 1em;
+  line-height: 1.2;
+  margin: 0 0 0.75em;
   overflow: hidden;
 }
 
@@ -107,7 +123,7 @@ const expand_link = computed(() => {
 }
 
 .dcpNew .facet {
-  margin-bottom: 2em;
+  margin-bottom: 2rem;
 }
 
 .dcpNew .facet tbody {
@@ -120,20 +136,21 @@ const expand_link = computed(() => {
   border-top: none;
 }
 
-.facetMore {
-  float: right;
+.facetToggle {
+  position: absolute;
+  left: 0.6em;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  color: #fff;
 }
-
-.facetMore a,
-.facetLess a {
-  font-style: normal;
-  font-weight: bold;
-  font-size: 0.8em;
-  color: #666;
-  text-transform: uppercase;
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 4px 4px 4px 4px;
-  padding: 2px 8px;
+.facetToggle:hover,
+.facetToggle:visited {
+  color: #fff;
+}
+.facetToggle :deep(.fas),
+.facetToggle :deep(.svg-inline--fa) {
+  font-size: 0.85em;
 }
 </style>

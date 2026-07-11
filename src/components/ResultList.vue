@@ -1,10 +1,11 @@
 <script lang="ts" setup>
 import { ref, computed, onBeforeMount } from 'vue'
-import { useRouter, useRoute, stringifyQuery } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import ResultItem from '@/components/ResultItem.vue'
 import FacetBlock from '@/components/FacetBlock.vue'
 import NoResults from '@/components/NoResults.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
+import AdvancedSearch from '@/components/AdvancedSearch.vue'
 import CamplPageHeader from '@/components/campl-page-header.vue'
 import 'vue-awesome-paginate/dist/style.css'
 import { CSpinner } from '@coreui/vue'
@@ -12,7 +13,6 @@ import {
   api_url,
   desired_facets,
   facet_key,
-  advanced_params,
   non_filtering_keys,
   tab_class,
   tab_href,
@@ -95,21 +95,6 @@ const sort = computed(() => {
 
 const keyword = computed(() => {
   return 'keyword' in route.query ? route.query['keyword'] : null
-})
-
-const advanced_query_string = computed(() => {
-  const params: any = {}
-  all_params.value
-    .filter(p => advanced_params.includes(p.key))
-    .forEach(p => {
-      if (params[p.key]) {
-        params[p.key].push(p.value)
-      } else {
-        params[p.key] = [p.value]
-      }
-    })
-
-  return stringifyQuery(params)
 })
 
 const paginated_results = computed(() => total.value >= items_per_page )
@@ -211,11 +196,11 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <campl-page-header :keyword="keyword_values" :key="keyword_values" />
+  <campl-page-header />
   <div class="campl-row campl-content campl-recessed-content dcpNew">
     <div class="campl-wrap clearfix">
       <div
-        class="campl-column9 campl-main-content"
+        class="campl-column8 campl-main-content"
         id="page-content"
         style="min-height: 100vh"
       >
@@ -315,17 +300,6 @@ onBeforeMount(async () => {
                                   ></router-link
                                 ><br />
                               </span>
-                              <p
-                                class="modify_advanced"
-                                v-if="advanced_query_string.length > 0"
-                              >
-                                <a
-                                  :href="
-                                    '/advanced-search?' + advanced_query_string
-                                  "
-                                  >Modify search</a
-                                >
-                              </p>
                             </div>
                           </div>
                           <div class="num_items" v-show="total >= 1">
@@ -419,12 +393,17 @@ onBeforeMount(async () => {
       </div>
       <!-- facets -->
 
-      <div class="campl-column3 campl-secondary-content" id="page-secondary">
+      <div class="campl-column4 campl-secondary-content" id="page-secondary">
         <div class="region-sidebar">
           <div class="srch-sidebar"></div>
           <div class="view-my-sidebar">
-            <div class="field-content">
-              <h3>Refine your search</h3>
+            <div class="field-content2">
+              <div class="refine">
+                <div class="field-content">
+              <h3>Search within these results</h3>
+              <AdvancedSearch />
+              </div>
+              </div>
               <div class="cudl-results sidebar-results-list">
                 <div class="facet">
                   <facet-block
@@ -544,24 +523,16 @@ onBeforeMount(async () => {
   margin-bottom: 1.5em;
 }
 
-.dcpNew .campl-column3.campl-secondary-content {
+.dcpNew .campl-column4.campl-secondary-content {
   display: block;
   position: relative !important;
-}
-
-#page-content .modify_advanced a,
-#page-content .modify_advanced a:visited {
-  color: #fff;
-  background-color: #4b701c;
-  padding: 3px 12px;
-  border-radius: 24px;
-  margin-top: 10px;
-  box-shadow: rgba(0, 0, 0, 0.27) 1px 1px 5px;
 }
 
 #page-content .search-results-page .search-result-item h2 a {
   color: #111;
 }
+
+.facet > .facet {background-color: #f7f5f0; margin-bottom: 2rem;}
 
 /* CSS for spinner from coreui - https://github.com/coreui/coreui.
    It's compatible bootstrap 5 and loading up the full CSS disrupts the current

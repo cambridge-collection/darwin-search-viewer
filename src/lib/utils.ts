@@ -218,6 +218,19 @@ function build_all_params(query: LocationQuery): { key: string; value: string }[
   return result
 }
 
+function filtering_params(
+  all_params: { key: string; value: string }[],
+): { key: string; value: string }[] {
+  return all_params.filter(p => !implementation.non_filtering_keys.includes(p.key))
+}
+
+function is_advanced_active(all_params: { key: string; value: string }[]): boolean {
+  const triggers = implementation.advanced_params.filter(
+    p => !implementation.advanced_default_value_params.includes(p),
+  )
+  return all_params.some(p => triggers.includes(p.key))
+}
+
 function _tracer_bullet(msg: unknown): void {
   if (implementation.debug) {
     console.log(msg)
@@ -238,5 +251,7 @@ export {
   _facet_display_name,
   escapeRegExp,
   build_all_params,
+  filtering_params,
+  is_advanced_active,
   _tracer_bullet,
 }

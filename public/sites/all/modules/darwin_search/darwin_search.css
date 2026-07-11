@@ -376,9 +376,7 @@ body.with-advanced-search .campl-column3.campl-secondary-content {
   color: #666;
   font-style: italic;
 }
-#advanced-search-forms form p.search-dates span.between {
-  padding-left: 1em;
-}
+
 #advanced-search-forms
   form
   p.search-dates
