@@ -27,7 +27,7 @@ To run the component locally:
 The deployment is currently manual.
 
 1. Set `apiURL` to the appropriate search api for the environment.
-2. Run ` npm run build` at the root level of this repository
+2. Run `npm run build` at the root level of this repository
 3. The outputs are written to `./dist`.
 4. Upload the outputs into the `./www` directory of the environment's release bucket.
 
