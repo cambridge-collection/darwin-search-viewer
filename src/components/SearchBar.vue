@@ -15,7 +15,7 @@ function onSubmit(): void {
   delete q.keyword
 
   const text = term.value.trim()
-  if (text) q.text = text
+  if (text) q.keyword = text
 
   q.page = 1
   router.push({ name: 'search', query: q })

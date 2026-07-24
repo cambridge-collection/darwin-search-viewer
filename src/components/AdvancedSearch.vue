@@ -50,7 +50,7 @@ function freshAdv() {
 function advFromQuery() {
   const activeCorrespondent = correspondentKeys.find(k => qval(k))
   return {
-    text: qjoin('text'),
+    text: qjoin('text') || qjoin('keyword'),
     sectionType: qval('sectionType'),
     role: activeCorrespondent ?? 'search-correspondent',
     name: activeCorrespondent ? qval(activeCorrespondent) : '',
@@ -93,10 +93,17 @@ function onReset(): void {
 function onSubmit(): void {
   const q = baseQuery()
   for (const k of advanced_params) delete q[k]
+  delete q.keyword
 
-  const text = adv.text.trim()
-  if (text) q.text = text
-  if (adv.sectionType) q.sectionType = adv.sectionType
+  const term = adv.text.trim()
+  if (term) {
+    if (adv.sectionType) {
+      q.text = term
+      q.sectionType = adv.sectionType
+    } else {
+      q.keyword = term
+    }
+  }
   if (adv.name.trim()) q[adv.role] = adv.name.trim()
 
   const dates: Record<string, string> = {

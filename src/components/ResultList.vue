@@ -398,7 +398,7 @@ onBeforeMount(async () => {
           <div class="srch-sidebar"></div>
           <div class="view-my-sidebar">
             <div class="field-content2">
-              <div class="refine">
+              <div class="refine" v-if="core !== 'pages'">
                 <div class="field-content">
               <h3>Search within these results</h3>
               <AdvancedSearch />
