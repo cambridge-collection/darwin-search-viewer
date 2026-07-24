@@ -25,17 +25,18 @@ import {
   _params_to_query_structure,
   _tracer_bullet,
 } from '@/lib/utils'
+import type { SearchDoc } from '@/lib/types'
 
 const router = useRouter()
 const route = useRoute()
-const commits = ref(<any[]>[])
-const facets = ref(<any>{})
+const commits = ref<SearchDoc[]>([])
+const facets = ref<Record<string, unknown>>({})
 const core = computed(() => {
   const tc = 'tc' in route.query && route.query['tc'] ? route.query['tc'] : ''
   return tc == 'pages' ? 'pages' : 'items'
 })
 const is_loading = ref(true)
-const is_error = ref(<any>{'bool': false, message: ""})
+const is_error = ref<{ bool: boolean; message: string }>({ bool: false, message: '' })
 
 const items_per_page = 20
 
@@ -49,7 +50,7 @@ function get_current_page(): number {
 
 const currentPage = ref(get_current_page())
 
-let total = ref(0)
+const total = ref(0)
 
 const all_params = computed<{ key: string; value: string }[]>(() =>
   build_all_params(route.query),
@@ -99,9 +100,9 @@ const keyword = computed(() => {
 
 const paginated_results = computed(() => total.value >= items_per_page )
 
-function throw_error(error: any) {
+function throw_error(error: unknown) {
   is_error.value['bool'] = true
-  is_error.value['message'] = error
+  is_error.value['message'] = String(error)
   is_loading.value = false
   console.log(error)
 }
@@ -162,20 +163,17 @@ async function fetchData(start: number) {
   if (!is_error.value['bool'] && nq['response']) {
   commits.value = nq['response']['docs']
   total.value = nq['response']['numFound']
-  const facets_cleaned: any = {}
-  for (const key of desired_facets) {
-    const facet_details = Object.entries(
-      nq['facet_counts']['facet_fields'],
-    ) as [string, Array<unknown>][]
-    for (const [facet_name, facet_pairs] of facet_details) {
-      facets.value[facet_name] = { buckets: [] }
-      const buckets = []
-      for (let i = 0; i < facet_pairs.length; i += 2) {
-        const pair = facet_pairs.slice(i, i + 2)
-        buckets.push({ val: pair[0], count: pair[1] })
-      }
-      facets_cleaned[facet_name] = buckets
+  const facets_cleaned: Record<string, { val: unknown; count: unknown }[]> = {}
+  const facet_details = Object.entries(
+    nq['facet_counts']['facet_fields'],
+  ) as [string, Array<unknown>][]
+  for (const [facet_name, facet_pairs] of facet_details) {
+    const buckets = []
+    for (let i = 0; i < facet_pairs.length; i += 2) {
+      const pair = facet_pairs.slice(i, i + 2)
+      buckets.push({ val: pair[0], count: pair[1] })
     }
+    facets_cleaned[facet_name] = buckets
   }
   facets.value = facets_cleaned
 }

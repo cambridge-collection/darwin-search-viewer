@@ -1,13 +1,9 @@
 <script lang="ts" setup>
 import { ref, type PropType } from 'vue'
-
-interface ResultData {
-  highlighting: string[]
-  [key: string]: any
-}
+import type { SearchDoc } from '@/lib/types'
 
 defineProps({
-  item: { type: Object as PropType<ResultData>, required: true },
+  item: { type: Object as PropType<SearchDoc>, required: true },
   currentPage: { type: Number, required: true },
   index: { type: Number, required: true },
 })
