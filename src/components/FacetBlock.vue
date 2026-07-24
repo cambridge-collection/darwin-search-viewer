@@ -52,7 +52,8 @@ const is_expanded = computed(() => {
 })
 
 const unexpand_link = computed(() => {
-  const { expand, ...unexpand_obj } = route.query
+  const unexpand_obj = { ...route.query }
+  delete unexpand_obj.expand
   return unexpand_obj
 })
 
