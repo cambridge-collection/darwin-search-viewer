@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { reactive, computed } from 'vue'
+import { reactive, computed, watch } from 'vue'
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router'
 import {
   advanced_params,
@@ -68,6 +68,8 @@ function advFromQuery() {
 }
 
 const adv = reactive(advFromQuery())
+
+watch(() => route.fullPath, () => Object.assign(adv, advFromQuery()))
 
 function baseQuery(): LocationQueryRaw {
   const q: LocationQueryRaw = { ...route.query }

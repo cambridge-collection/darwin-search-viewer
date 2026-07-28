@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, onBeforeMount } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import ResultItem from '@/components/ResultItem.vue'
 import FacetBlock from '@/components/FacetBlock.vue'
@@ -22,7 +22,6 @@ import {
   cancel_link,
   _facet_display_name,
   _query_param_sort,
-  _params_to_query_structure,
   _tracer_bullet,
 } from '@/lib/utils'
 import type { SearchDoc } from '@/lib/types'
@@ -55,8 +54,6 @@ const total = ref(0)
 const all_params = computed<{ key: string; value: string }[]>(() =>
   build_all_params(route.query),
 )
-
-const facets_key = computed(() => _params_to_query_structure(all_params.value))
 
 const fullpath_uriencoded = computed(() => encodeURIComponent(route.fullPath))
 
@@ -100,7 +97,12 @@ const keyword = computed(() => {
 
 const paginated_results = computed(() => total.value >= items_per_page )
 
-function throw_error(error: unknown) {
+/* Navigations no longer remount this component, so a slow response can outlive
+   the query that asked for it; only the newest request may touch state. */
+let request_id = 0
+
+function throw_error(error: unknown, request: number) {
+  if (request !== request_id) return
   is_error.value['bool'] = true
   is_error.value['message'] = String(error)
   is_loading.value = false
@@ -117,6 +119,9 @@ const updateURL = async (page: number): Promise<void> => {
 }
 
 async function fetchData(start: number) {
+  const request = ++request_id
+  is_loading.value = true
+  is_error.value = { bool: false, message: '' }
   commits.value = []
   const request_params = filtering_params.value.map(
     p => p.key + '=' + encodeURIComponent(String(p.value)),
@@ -158,8 +163,9 @@ async function fetchData(start: number) {
       return responseJson
     })
     .catch(error => {
-      throw_error(error)
+      throw_error(error, request)
     })
+  if (request !== request_id) return
   if (!is_error.value['bool'] && nq['response']) {
   commits.value = nq['response']['docs']
   total.value = nq['response']['numFound']
@@ -176,21 +182,24 @@ async function fetchData(start: number) {
     facets_cleaned[facet_name] = buckets
   }
   facets.value = facets_cleaned
+  is_loading.value = false
 }
   else {
     // The fetch result wasn't json with a 'response' property
     const msg = (is_error.value['message']) ? is_error.value['message'] : 'Error: Invalid response data'
-    throw_error(msg)
+    throw_error(msg, request)
   }
 }
 
-onBeforeMount(async () => {
-  //console.log('Before')
-  window.scrollTo(0, 0)
-  await fetchData(currentPage.value).then(() => {
-    is_loading.value = false
-  })
-})
+watch(
+  () => route.fullPath,
+  () => {
+    currentPage.value = get_current_page()
+    window.scrollTo(0, 0)
+    fetchData(currentPage.value)
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -251,7 +260,7 @@ onBeforeMount(async () => {
               <p>Please try again in a few minutes</p>
             </div>
             <div v-show="!is_loading && !is_error['bool']">
-              <div class="campl-content-container" :key="route.fullPath">
+              <div class="campl-content-container">
                 <ul class="tab-menu">
                   <li>
                     <a
@@ -410,7 +419,7 @@ onBeforeMount(async () => {
                     :params="all_params"
                     v-bind:facets="facets"
                     v-bind:facet_key="facet_key"
-                    :key="facets_key + '::' + facet"
+                    :key="facet"
                   />
                 </div>
               </div>
