@@ -16,8 +16,9 @@ const props = defineProps({
   },
 })
 
-const fullPath = ref(route.fullPath)
-const expandedName = ref('expand' in route.query ? route.query['expand'] : null)
+const expandedName = computed(() =>
+  'expand' in route.query ? route.query['expand'] : null,
+)
 const name = ref(
   props.facet_key[props.desired_facet].name.replace(/(^"|"$)/g, ''),
 )
@@ -93,7 +94,7 @@ const expand_link = computed(() => {
             :params="params"
             :subfacets="subfacets"
             v-bind:is_subgroup="false"
-            :key="JSON.stringify(facet) + fullPath"
+            :key="JSON.stringify(facet)"
           />
         </tbody>
       </table>

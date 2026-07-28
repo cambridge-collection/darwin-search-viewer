@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
 import {
   _bucket_to_param_name,
   _get_subfacet_bucket_name,
@@ -8,8 +7,6 @@ import {
   cancel_link as build_cancel_link,
   escapeRegExp,
 } from '@/lib/utils'
-
-const route = useRoute()
 
 const props = defineProps({
   facet: {
@@ -111,7 +108,7 @@ const name = computed(() => {
               :params="params"
               :subfacets="subfacets"
               v-bind:is_subgroup="true"
-              :key="JSON.stringify(route.fullPath) + JSON.stringify(sub)"
+              :key="JSON.stringify(sub)"
             />
           </tbody>
         </table>
