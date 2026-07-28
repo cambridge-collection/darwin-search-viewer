@@ -319,9 +319,6 @@ watch(
                               <form method="get" action="/search">
                                 <b>Sorted by:&nbsp;</b>
                                 <select size="1" name="sort">
-                                  {{
-                                    sort
-                                  }}
                                   <option
                                     value="score"
                                     :selected="sort == 'score'"
