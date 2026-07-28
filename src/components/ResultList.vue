@@ -123,8 +123,7 @@ const updateURL = async (page: number): Promise<void> => {
 function onSort(e: Event): void {
   const q: LocationQueryRaw = { ...route.query }
   for (const k of params_to_remove) delete q[k]
-  const form = e.target as HTMLFormElement
-  const value = String(new FormData(form).get('sort') ?? 'score')
+  const value = (e.target as HTMLSelectElement).value
   if (value === 'score') delete q.sort
   else q.sort = value
   q.page = 1
@@ -329,16 +328,20 @@ watch(
                           </div>
                           <div v-if="total >= 1">
                             <div class="sort_by" v-if="core != 'pages'">
-                              <form @submit.prevent="onSort">
+                              <label>
                                 <b>Sorted by:&nbsp;</b>
-                                <select size="1" name="sort" :value="sort">
+                                <select
+                                  size="1"
+                                  name="sort"
+                                  :value="sort"
+                                  @change="onSort"
+                                >
                                   <option value="score">relevance</option>
                                   <option value="author">author</option>
                                   <option value="addressee">addressee</option>
                                   <option value="date">date</option>
                                 </select>
-                                &nbsp;<input type="submit" value="Go!" />
-                              </form>
+                              </label>
                             </div>
                             <PaginationBar
                               :total="total"
