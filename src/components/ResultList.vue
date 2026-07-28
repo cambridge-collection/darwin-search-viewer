@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, computed, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter, useRoute, type LocationQueryRaw } from 'vue-router'
 import ResultItem from '@/components/ResultItem.vue'
 import FacetBlock from '@/components/FacetBlock.vue'
 import NoResults from '@/components/NoResults.vue'
@@ -14,6 +14,7 @@ import {
   desired_facets,
   facet_key,
   non_filtering_keys,
+  params_to_remove,
   tab_class,
   tab_href,
 } from '@/implementationConfig'
@@ -88,7 +89,8 @@ const keyword_values = computed(() =>
 )
 
 const sort = computed(() => {
-  return 'sort' in route.query ? route.query['sort'] : 'score'
+  const s = route.query['sort']
+  return (Array.isArray(s) ? s[0] : s) || 'score'
 })
 
 const keyword = computed(() => {
@@ -116,6 +118,17 @@ const updateURL = async (page: number): Promise<void> => {
     name: 'search',
     query: { ...route.query, page: page },
   })
+}
+
+function onSort(e: Event): void {
+  const q: LocationQueryRaw = { ...route.query }
+  for (const k of params_to_remove) delete q[k]
+  const form = e.target as HTMLFormElement
+  const value = String(new FormData(form).get('sort') ?? 'score')
+  if (value === 'score') delete q.sort
+  else q.sort = value
+  q.page = 1
+  router.push({ name: 'search', query: q })
 }
 
 async function fetchData(start: number) {
@@ -316,44 +329,14 @@ watch(
                           </div>
                           <div v-if="total >= 1">
                             <div class="sort_by" v-if="core != 'pages'">
-                              <form method="get" action="/search">
+                              <form @submit.prevent="onSort">
                                 <b>Sorted by:&nbsp;</b>
-                                <select size="1" name="sort">
-                                  <option
-                                    value="score"
-                                    :selected="sort == 'score'"
-                                  >
-                                    relevance
-                                  </option>
-                                  <option
-                                    value="author"
-                                    :selected="sort == 'author'"
-                                  >
-                                    author
-                                  </option>
-                                  <option
-                                    value="addressee"
-                                    :selected="sort == 'addressee'"
-                                  >
-                                    addressee
-                                  </option>
-                                  <option
-                                    value="date"
-                                    :selected="sort == 'date'"
-                                  >
-                                    date
-                                  </option>
+                                <select size="1" name="sort" :value="sort">
+                                  <option value="score">relevance</option>
+                                  <option value="author">author</option>
+                                  <option value="addressee">addressee</option>
+                                  <option value="date">date</option>
                                 </select>
-                                <input
-                                  v-for="p in filtering_params"
-                                  type="hidden"
-                                  :name="p.key"
-                                  :value="p.value"
-                                  :key="p.key + p.value"
-                                />
-                                <input type="hidden" name="page" value="1" />
-                                <input type="hidden" name="tab" value="" />
-                                <input type="hidden" name="tc" :value="core" />
                                 &nbsp;<input type="submit" value="Go!" />
                               </form>
                             </div>
