@@ -52,12 +52,11 @@ function onClear(): void {
                         type="submit"
                         value="Search"
                       />
-                      <button
+                      <input
                         type="button"
+                        value="Clear"
                         @click="onClear"
-                      >
-                        Clear
-                      </button>
+                      />
                     </td>
                   </tr>
                   <tr>
