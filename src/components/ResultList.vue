@@ -15,8 +15,9 @@ import {
   facet_key,
   non_filtering_keys,
   params_to_remove,
+  tab_active,
   tab_class,
-  tab_href,
+  tab_query,
 } from '@/implementationConfig'
 import {
   build_all_params,
@@ -276,16 +277,36 @@ watch(
                 <ul class="tab-menu">
                   <li>
                     <a
-                      :href="tab_href('cudl-results', core, keyword)"
+                      v-if="tab_active('cudl-results', core)"
                       :class="tab_class('cudl-results', core)"
+                      href="#"
                       >Letters, people &amp; references</a
+                    >
+                    <router-link
+                      v-else
+                      :to="{
+                        name: 'search',
+                        query: tab_query('cudl-results', keyword),
+                      }"
+                      :class="tab_class('cudl-results', core)"
+                      >Letters, people &amp; references</router-link
                     >
                   </li>
                   <li>
                     <a
-                      :href="tab_href('this-site', core, keyword)"
+                      v-if="tab_active('this-site', core)"
                       :class="tab_class('this-site', core)"
+                      href="#"
                       >Articles</a
+                    >
+                    <router-link
+                      v-else
+                      :to="{
+                        name: 'search',
+                        query: tab_query('this-site', keyword),
+                      }"
+                      :class="tab_class('this-site', core)"
+                      >Articles</router-link
                     >
                   </li>
                 </ul>

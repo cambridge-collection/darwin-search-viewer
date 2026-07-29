@@ -1,4 +1,4 @@
-import { stringifyQuery, type LocationQueryValue } from 'vue-router'
+import type { LocationQueryRaw, LocationQueryValue } from 'vue-router'
 
 export const debug = true
 
@@ -143,19 +143,12 @@ export function tab_class(name: string, core: string) {
   return [name, active_class].join(' ')
 }
 
-export function tab_href(
+// Only `keyword` carries across a core switch: the cores have disjoint facet sets.
+export function tab_query(
   name: string,
-  core: string,
   keyword: LocationQueryValue | LocationQueryValue[] | null,
-) {
-  let path = tab_active(name, core) ? '#' : '/search?'
-  const params = { keyword: keyword, tc: 'pages', page: 1 }
-
-  if (name != 'this-site') {
-    delete (params as { tc?: string }).tc
-  }
-  if (!tab_active(name, core)) {
-    path += stringifyQuery(params)
-  }
-  return path
+): LocationQueryRaw {
+  const params: LocationQueryRaw = { keyword, page: 1 }
+  if (name === 'this-site') params.tc = 'pages'
+  return params
 }
