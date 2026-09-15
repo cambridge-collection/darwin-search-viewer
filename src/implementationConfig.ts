@@ -3,7 +3,7 @@ import type { LocationQueryRaw, LocationQueryValue } from 'vue-router'
 export const debug = true
 
 // Production API: https://search.darwinproject.ac.uk
-export const api_url: string = 'http://localhost' //'https://darwin-editorial-search.darwinproject.ac.uk'
+export const api_url: string = 'https://search.darwinproject.ac.uk'
 
 // Control params kept out of the filter set (sort via the sort form, tc via the core path)
 export const non_filtering_keys = ['tc', 'sort']
