@@ -34,8 +34,14 @@ The deployment is currently manual.
 At present, the `dist` bucket should only contain:
 - `search.html`
 - `assets` directory containing:
-  - A javascript file called `SearchResults` with some random hash added as a suffix (_e.g._ `SearchResults-DeJz_Pi3.js`)
-  - a subdirectory called `cdcp-searchResults` containing two css files (`search.css` & `search2.css`) and one javascript file (`search.js`)
+  - A javascript file called `SearchResults` with a content hash added as a suffix (_e.g._ `SearchResults-DFF7ZWpT.js`)
+  - a subdirectory called `cdcp-searchResults` containing two css files (`SearchResults-<hash>.css` & `app-<hash>.css`) and one javascript file (`search-<hash>.js`)
+
+Every asset filename carries a content hash, so the names change whenever the
+corresponding source changes. Only `search.html` has a stable name. Upload each
+release alongside the previous one rather than replacing its contents, since a
+visitor who already has the page open will still request the files named by the
+release they loaded.
 
 **Do not deploy any of the outputs** if the build contains any other files or directories as this repository contains a partial selection of common assets included on the main site to make local testing easier. These resources *should* be automatically removed during the build process. They are not necessary because they are added to the bucket as part of the normal data build and release process for the TEI and Site HTML materials. 
 

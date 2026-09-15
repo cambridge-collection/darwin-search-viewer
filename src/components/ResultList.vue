@@ -239,7 +239,7 @@ watch(
                   "
                   title="Share on Facebook"
                   target="_blank"
-                  ><i class="fab fa-facebook-f" aria-hidden="true"></i
+                  ><i class="fa fa-facebook-f" aria-hidden="true"></i
                 ></a>
                 <a
                   class="icon-sm darwin-twitter"
@@ -249,7 +249,7 @@ watch(
                   "
                   title="Share on Twitter"
                   target="_blank"
-                  ><i class="fab fa-twitter" aria-hidden="true"></i
+                  ><i class="fa fa-twitter" aria-hidden="true"></i
                 ></a>
                 <a
                   class="icon-sm darwin-email"
@@ -258,7 +258,7 @@ watch(
                     fullpath_uriencoded
                   "
                   title="Share by email"
-                  ><i class="fas fa-envelope" aria-hidden="true"></i
+                  ><i class="fa fa-envelope" aria-hidden="true"></i
                 ></a>
               </div>
               <!-- end social media sharing -->

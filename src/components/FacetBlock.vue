@@ -77,7 +77,7 @@ const expand_link = computed(() => {
         :aria-label="is_expanded ? 'Show fewer' : 'Show all'"
       >
         <i
-          class="fas"
+          class="fa"
           :class="is_expanded ? 'fa-caret-down' : 'fa-caret-right'"
           aria-hidden="true"
         ></i>
@@ -151,8 +151,7 @@ const expand_link = computed(() => {
 .facetToggle:visited {
   color: #fff;
 }
-.facetToggle :deep(.fas),
-.facetToggle :deep(.svg-inline--fa) {
+.facetToggle .fa {
   font-size: 0.85em;
 }
 </style>
