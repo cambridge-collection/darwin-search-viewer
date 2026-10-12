@@ -1,11 +1,12 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue'
-import { useRouter, type LocationQueryRaw } from 'vue-router'
+import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router'
 
 const props = defineProps({
   keyword: { type: String, required: true },
 })
 
+const route = useRoute()
 const router = useRouter()
 
 const term = ref(props.keyword)
@@ -21,6 +22,7 @@ function onSubmit(): void {
   const q: LocationQueryRaw = { page: 1 }
   const text = term.value.trim()
   if (text) q.keyword = text
+  if (route.query.tc) q.tc = route.query.tc
   router.push({ name: 'search', query: q })
 }
 
