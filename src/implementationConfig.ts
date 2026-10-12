@@ -1,6 +1,6 @@
 import type { LocationQueryRaw, LocationQueryValue } from 'vue-router'
 
-export const debug = true
+export const debug = false
 
 // Production API: https://search.darwinproject.ac.uk
 export const api_url: string = 'https://search.darwinproject.ac.uk'
