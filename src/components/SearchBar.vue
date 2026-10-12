@@ -42,6 +42,7 @@ function onSubmit(): void {
             />
             <input type="submit" value="Search" class="form-submit" />
           </div>
+          <div class="advanced-search"><a href="/advanced-search">advanced search ›</a></div>
         </form>
       </span>
     </div>
